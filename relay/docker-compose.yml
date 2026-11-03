@@ -1,0 +1,31 @@
+services:
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    command: serve
+    ports:
+      - "${NTFY_PORT:-8765}:80"
+    volumes:
+      - ntfy-cache:/var/lib/ntfy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:80/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  relay:
+    image: ghcr.io/miu518/ntfy-relay:latest
+    ports:
+      - "${RELAY_PORT:-8766}:8080"
+    environment:
+      NTFY_URL: http://ntfy:80
+    volumes:
+      - relay-data:/data
+    restart: unless-stopped
+    depends_on:
+      ntfy:
+        condition: service_started
+
+volumes:
+  ntfy-cache:
+  relay-data:
