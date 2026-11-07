@@ -47,12 +47,18 @@ db.commit()
 db_lock = threading.Lock()
 
 
+def _h(s: str) -> str:
+    # http.client 只接受 latin-1 header；把 UTF-8 字节原样“走私”过去，
+    # ntfy 服务端按 UTF-8 解码即还原中文（与 mcp-ntfy-mailbox 同一做法）
+    return (s or "").encode("utf-8").decode("latin-1")
+
+
 def ntfy_post(topic, title, message, priority, tags, click, timeout=10) -> bool:
-    headers = {"Title": title or "", "Priority": priority or "default"}
+    headers = {"Title": _h(title), "Priority": priority or "default"}
     if tags:
-        headers["Tags"] = tags
+        headers["Tags"] = _h(tags)
     if click:
-        headers["Click"] = click
+        headers["Click"] = _h(click)
     req = urllib.request.Request(
         f"{NTFY_URL}/{urllib.request.quote(topic, safe='')}",
         data=(message or "").encode("utf-8"),
